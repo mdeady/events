@@ -11,19 +11,24 @@ var app = require('../../../server.js'),
 function readNamespace(req, res) {
 
     var nsName = req.route.params.namespace;
-    db.query("select * from namespace where name = ?", null, {raw : true}, [nsName])
-        .success(function(ns) {
+    db.query("select ns.name as namespace, " +
+        "id.name as identifier " +
+        "from namespace ns " +
+        "join identifier id " +
+        "on id.namespace_id = ns.id " +
+        "where ns.name = ?", null, {raw : true}, [nsName])
+        .success(function(namespaceIdentifiers) {
 
-            if (ns && ns.length > 0) {
-                ns = ns[0];
-                db.query('select name from identifier where id = ?', null, {raw : true}, [ns.id])
-                    .success(function(identifiers) {
+            if (namespaceIdentifiers && namespaceIdentifiers.length > 0) {
+                var namespace = namespaceIdentifiers.reduce(function(ns, nsId) {
 
-                        ns.identifiers = _.map(identifiers, 'name');
-                        res.send(standardResponse({
-                            data : ns
-                        }));
-                    });
+                    ns.namespace = nsId.namespace;
+                    ns.identifiers.push(nsId.identifier);
+                    return ns;
+                }, {namespace : null, identifiers : []});
+                res.send(standardResponse({
+                    data : namespace
+                }))
             } else {
                 res.send(404);
             }
@@ -35,7 +40,7 @@ function readIdentifier(req, res) {
     var ns = req.route.params.namespace,
         id = req.route.params.identifier;
 
-    db.query('select id.* ' +
+    db.query('select ns.name as namespace, id.name as identifier ' +
         'from identifier id ' +
         'join namespace ns ' +
         'on ns.id = id.namespace_id ' +
