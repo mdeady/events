@@ -44,11 +44,10 @@ Response codes include:
 * `201` - namespace or identifier was created.
 * `200` - namespace or identifier already existed.
 
-
-    GET /event/define/:namespace[/:identifier]
-
 A `GET` request to the same URL can be used to determine if the namespace or
 identifier has been defined.
+
+    GET /event/define/:namespace[/:identifier]
 
 Response codes include:
 

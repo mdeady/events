@@ -6,8 +6,9 @@ CREATE TABLE IF NOT EXISTS namespace (
 
 CREATE TABLE IF NOT EXISTS identifier (
     id SERIAL NOT NULL PRIMARY KEY,
-    namespace_id INT NOT NULL REFERENCES namespace (id),
-    name VARCHAR(255) NOT NULL UNIQUE CHECK (char_length(name) > 0)
+    namespace_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL CHECK (char_length(name) > 0),
+    UNIQUE (namespace_id, name)
 )
 ;
 
