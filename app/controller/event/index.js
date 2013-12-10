@@ -5,23 +5,50 @@ var app = require('../../../server.js'),
     models = app.get('models'),
     Namespace = models.Namespace,
     Identifier = models.Identifier,
-    standardResponse = require('../../lib/StandardResponse');
+    standardResponse = require('../../lib/StandardResponse'),
+    _ = require('lodash');
 
 function readNamespace(req, res) {
 
-    Namespace.find({
-        where   : {
-            name : req.route.params.namespace
-        },
-        include : [Identifier]
-    }).success(function(ns) {
+    var nsName = req.route.params.namespace;
+    db.query("select * from namespace where name = ?", null, {raw : true}, [nsName])
+        .success(function(ns) {
 
-            if (ns) {
-                res.send(standardResponse({
-                    data : ns
-                }));
+            if (ns && ns.length > 0) {
+                ns = ns[0];
+                db.query('select name from identifier where id = ?', null, {raw : true}, [ns.id])
+                    .success(function(identifiers) {
+
+                        ns.identifiers = _.map(identifiers, 'name');
+                        res.send(standardResponse({
+                            data : ns
+                        }));
+                    });
             } else {
-                res.status(404).send('');
+                res.send(404);
+            }
+        });
+}
+
+function readIdentifier(req, res) {
+
+    var ns = req.route.params.namespace,
+        id = req.route.params.identifier;
+
+    db.query('select id.* ' +
+        'from identifier id ' +
+        'join namespace ns ' +
+        'on ns.id = id.namespace_id ' +
+        'where ns.name = ? ' +
+        'and id.name = ?', null, {raw : true}, [ns, id])
+        .success(function(result) {
+
+            if (result && result.length > 0) {
+                res.send(standardResponse({
+                    data : result[0]
+                }))
+            } else {
+                res.send(404);
             }
         });
 }
@@ -29,4 +56,5 @@ function readNamespace(req, res) {
 module.exports = function(rootNs, app) {
 
     app.get(rootNs + '/define/:namespace', readNamespace);
+    app.get(rootNs + '/define/:namespace/:identifier', readIdentifier);
 };
