@@ -20,7 +20,6 @@ models.forEach(function(model) {
 (function(xp) {
     'use strict';
 
-    console.log(xp);
     xp.Namespace.hasMany(xp.Identifier);
 
     xp.Identifier.belongsTo(xp.Namespace, {

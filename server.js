@@ -18,5 +18,6 @@ app.use(app.router);
 
 
 require('./app/controller')('/event', app);
+require('./app/service')(app);
 
 app.listen(3000);
