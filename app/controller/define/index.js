@@ -112,7 +112,7 @@ function readIdentifier(req, res) {
 
 module.exports = function(rootNs, app) {
 
-    app.get(rootNs + '/define/:namespace', readNamespace);
-    app.post(rootNs + '/define/:namespace', defineNamespace);
-    app.get(rootNs + '/define/:namespace/:identifier', readIdentifier);
+    app.get(rootNs + '/:namespace', readNamespace);
+    app.post(rootNs + '/:namespace', defineNamespace);
+    app.get(rootNs + '/:namespace/:identifier', readIdentifier);
 };

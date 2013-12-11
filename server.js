@@ -17,6 +17,6 @@ app.set('nameRegex', /[^-_a-z]|^.{0,2}$/);
 app.use(app.router);
 
 
-require('./config/routing.js')(app);
+require('./app/controller')('/event', app);
 
 app.listen(3000);
