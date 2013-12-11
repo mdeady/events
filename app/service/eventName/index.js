@@ -3,7 +3,7 @@
 var _ = require('lodash'),
     Promise = require('bluebird'),
     service = {
-        read   : function(ns, id) {
+        read : function(ns, id) {
 
             var namespace = service.all[ns];
             if (!namespace) {
@@ -24,17 +24,16 @@ var _ = require('lodash'),
         },
         define : function(ns, id) {
 
-            var existing = service.read(ns, id);
+            var existing = service.read(ns, id),
+                deferred;
 
             if (existing) {
-                return Promise.fulfilled([
-                    existing,
-                    false
-                ]);
+                return Promise.fulfilled([existing, false]);
             } else if (!id) {
 
-                var deferred = Promise.defer();
-                db.query('insert into namespace (name) values (?)', null, {raw : true}, [ns])
+                deferred = Promise.defer();
+                db.query('insert into namespace (name) values (?)',
+                    null, {raw : true}, [ns])
                     .then(function() {
 
                         return update();
@@ -43,6 +42,31 @@ var _ = require('lodash'),
 
                         deferred.resolve([
                             service.read(ns),
+                            true
+                        ]);
+                    });
+
+                return deferred.promise;
+            } else {
+
+                var existingNs = service.read(ns);
+
+                if (!existingNs) {
+                    return Promise.rejected('ns-undef\nNamespace ' + ns + ' does not exist.');
+                }
+
+                deferred = Promise.defer();
+
+                db.query('insert into identifier (namespace_id, name) values (?, ?)',
+                    null, {raw : true}, [existingNs.namespace_id, id])
+                    .then(function() {
+
+                        return update();
+                    })
+                    .then(function() {
+
+                        deferred.resolve([
+                            service.read(ns, id),
                             true
                         ]);
                     });

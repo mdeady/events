@@ -13,40 +13,31 @@ function eventNameService() {
     return app.get('eventNameService');
 }
 
+function define(req, res) {
 
-function readNamespace(req, res) {
+    var ns = req.route.params.namespace,
+        id = req.route.params.identifier;
 
-    var nsName = req.route.params.namespace,
-        ns = eventNameService().read(nsName);
-
-    if (ns === null) {
-        res.send(404);
-    } else {
-        res.send(standardResponse({
-            data : ns
-        }));
-    }
-}
-
-function defineNamespace(req, res) {
-
-    var nsName = req.route.params.namespace;
-
-    if (app.get('nameRegex').test(nsName)) {
+    if (app.get('nameRegex').test(ns)) {
         res.send(400, standardResponse()
             .addError('bad-name', 'Your name did not pass validation. It must be all lowercase letters - and _. No numbers.'));
         return;
     }
 
-    eventNameService().define(nsName).spread(function(ns, created) {
+    eventNameService().define(ns, id).spread(
+        function(newThing, created) {
 
-        res.send(created ? 201 : 200, standardResponse({
-            data : ns
-        }));
-    });
+            res.send(created ? 201 : 200, standardResponse({
+                data : newThing
+            }));
+        },
+        function(error) {
+            error = error.split('\n');
+            res.send(400, standardResponse().addError(error[0], error[1]));
+        });
 }
 
-function readIdentifier(req, res) {
+function read(req, res) {
 
     var ns = req.route.params.namespace,
         id = req.route.params.identifier,
@@ -63,7 +54,7 @@ function readIdentifier(req, res) {
 
 module.exports = function(rootNs, app) {
 
-    app.get(rootNs + '/:namespace', readNamespace);
-    app.post(rootNs + '/:namespace', defineNamespace);
-    app.get(rootNs + '/:namespace/:identifier', readIdentifier);
+    app.get(rootNs + '/:namespace/:identifier?', read);
+
+    app.post(rootNs + '/:namespace/:identifier?', define);
 };
