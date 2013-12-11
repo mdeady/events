@@ -8,31 +8,83 @@ var app = require('../../../server.js'),
     standardResponse = require('../../lib/StandardResponse'),
     _ = require('lodash');
 
+function getNamespace(name) {
+
+    return db.query("select ns.name as namespace, " +
+        "id.name as identifier " +
+        "from namespace ns " +
+        "left join identifier id " +
+        "on id.namespace_id = ns.id " +
+        "where ns.name = ?", null, {raw : true}, [name])
+        .then(function(nsIds) {
+
+            if (nsIds && nsIds.length > 0) {
+
+                return nsIds.reduce(function(ns, nsId) {
+
+                    ns.namespace = nsId.namespace;
+                    if (nsId.identifier) {
+
+                        ns.identifiers.push(nsId.identifier);
+                    }
+                    return ns;
+                }, {namespace : null, identifiers : []});
+            } else {
+                return null;
+            }
+        });
+}
+
 function readNamespace(req, res) {
 
     var nsName = req.route.params.namespace;
-    db.query("select ns.name as namespace, " +
-        "id.name as identifier " +
-        "from namespace ns " +
-        "join identifier id " +
-        "on id.namespace_id = ns.id " +
-        "where ns.name = ?", null, {raw : true}, [nsName])
-        .success(function(namespaceIdentifiers) {
+    getNamespace(nsName).then(function(ns) {
 
-            if (namespaceIdentifiers && namespaceIdentifiers.length > 0) {
-                var namespace = namespaceIdentifiers.reduce(function(ns, nsId) {
+        if (ns === null) {
+            res.send(404);
+        } else {
+            res.send(standardResponse({
+                data : ns
+            }));
+        }
+    });
+}
 
-                    ns.namespace = nsId.namespace;
-                    ns.identifiers.push(nsId.identifier);
-                    return ns;
-                }, {namespace : null, identifiers : []});
-                res.send(standardResponse({
-                    data : namespace
-                }))
-            } else {
-                res.send(404);
-            }
-        });
+function createNamespace(name) {
+
+    return db.query('insert into namespace (name) values (?)',
+        null, {raw : true}, [name]);
+}
+
+function defineNamespace(req, res) {
+
+    var nsName = req.route.params.namespace;
+
+    if (app.get('nameRegex').test(nsName)) {
+        res.send(400, standardResponse()
+            .addError('bad-name', 'Your name did not pass validation. It must be all lowercase letters - and _. No numbers.'));
+        return;
+    }
+
+    getNamespace(nsName).then(function(ns) {
+
+        console.log(ns);
+        if (!ns || ns.length === 0) {
+            createNamespace(nsName).success(function() {
+
+                getNamespace(nsName).then(function(ns) {
+
+                    res.send(201, standardResponse({
+                        data : ns
+                    }));
+                })
+            });
+        } else {
+            res.send(200, standardResponse({
+                data : ns
+            }));
+        }
+    })
 }
 
 function readIdentifier(req, res) {
@@ -61,5 +113,6 @@ function readIdentifier(req, res) {
 module.exports = function(rootNs, app) {
 
     app.get(rootNs + '/define/:namespace', readNamespace);
+    app.post(rootNs + '/define/:namespace', defineNamespace);
     app.get(rootNs + '/define/:namespace/:identifier', readIdentifier);
 };

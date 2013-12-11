@@ -20,9 +20,10 @@ models.forEach(function(model) {
 (function(xp) {
     'use strict';
 
+    console.log(xp);
     xp.Namespace.hasMany(xp.Identifier);
 
-    xp.Identifier.hasOne(xp.Namespace, {
+    xp.Identifier.belongsTo(xp.Namespace, {
         foreignKey : 'namespace_id'
     });
 

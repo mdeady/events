@@ -20,6 +20,8 @@ StandardResponse.prototype = {
     setSuccess : function(success) {
 
         this.success = Object.keys(this.errors).length == 0 && success;
+
+        return this;
     },
     addError : function(key, error) {
 
@@ -28,6 +30,8 @@ StandardResponse.prototype = {
         }
         this.errors[key].push(error);
         this.success = false;
+
+        return this;
     },
     addWarning : function(key, warning) {
 
@@ -35,6 +39,8 @@ StandardResponse.prototype = {
             this.warnings[key] = [];
         }
         this.warnings[key].push(warning);
+
+        return this;
     }
 };
 
